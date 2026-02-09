@@ -69,14 +69,14 @@ const ChatInterface = ({ username }) => {
             <div key={message.id} className={`flex items-start gap-3 ${message.isOwn ? 'flex-row-reverse' : ''}`}>
               {!message.isOwn && (
                 <Avatar className="w-10 h-10 mt-0.5">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                  <AvatarFallback className="bg-gradient-to-br from-gray-700 to-gray-900 text-white text-sm font-medium">
                     {message.sender.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               )}
               <div className={`flex-1 min-w-0 ${message.isOwn ? 'flex justify-end' : ''}`}>
                 <div className={`max-w-md ${message.isOwn ? 'text-right' : ''}`}>
-                  <div className="flex items-baseline gap-2">
+                  <div className={`flex items-baseline gap-2 mb-1 ${message.isOwn ? 'justify-end' : ''}`}>
                     <span className="text-sm font-semibold text-foreground">
                       {message.sender}
                     </span>
@@ -84,11 +84,11 @@ const ChatInterface = ({ username }) => {
                       {message.timestamp}
                     </span>
                   </div>
-                  <div className={`mt-0.5 px-4 py-2 rounded-lg inline-block ${
+                  <div className={`relative inline-block ${
                     message.isOwn 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-secondary/70 text-foreground'
-                  }`}>
+                      ? 'bg-gradient-to-br from-gray-800 to-black text-white shadow-lg shadow-gray-800/50 rounded-2xl rounded-tr-md' 
+                      : 'bg-gradient-to-br from-gray-50 to-gray-100 text-foreground shadow-md border border-gray-200/50 rounded-2xl rounded-tl-md'
+                  } px-4 py-3 backdrop-blur-sm`}>
                     <p className="text-sm break-words leading-relaxed text-left">
                       {message.text}
                     </p>
