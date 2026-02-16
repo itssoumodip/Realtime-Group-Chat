@@ -7,7 +7,9 @@ import { Send } from 'lucide-react';
 const GroupChatInterface = ({ username, socket }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
+    const [typingUsers, setTypingUsers] = useState([]);
     const messagesEndRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,20 +43,30 @@ const GroupChatInterface = ({ username, socket }) => {
                 timestamp: timestamp,
                 isOwn: data.username === username
             };
- 
+
             setMessages((prev) => [...prev, newMsg]);
         })
 
-        // TODO: Add more socket event listeners here
-        // Example:
-        // socket.on('chatMessage', (data) => {
-        //   // Handle incoming messages
-        // });
+        socket.on('typing', (data) => {
+            const typingUser = data.username;
+            if (typingUser !== username) {
+                setTypingUsers((prev) => {
+                    if (!prev.includes(typingUser)) {
+                        return [...prev, typingUser];
+                    }
+                    return prev;
+                });
 
-        // Cleanup listeners on unmount
+                setTimeout(() => {
+                    setTypingUsers((prev) => prev.filter(user => user !== typingUser));
+                }, 3000);
+            }
+        });
+
         return () => {
             socket.off('roomNotice');
-            // socket.off('chatMessage');
+            socket.off('chatMessage');
+            socket.off('typing');
         };
     }, [socket, username]);
 
@@ -67,12 +79,28 @@ const GroupChatInterface = ({ username, socket }) => {
             });
 
             setNewMessage('');
+            setTypingUsers([]);
+        }
+    };
+
+    const handleTyping = (e) => {
+        setNewMessage(e.target.value);
+
+        if (socket && e.target.value.length > 0) {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+
+            socket.emit('typing', { username });
+
+            typingTimeoutRef.current = setTimeout(() => {
+            }, 1000);
         }
     };
 
     return (
-        <div className="h-screen bg-white flex flex-col">
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200">
+        <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-[#075E54] flex items-center justify-center">
                     <img className='h-10 w-10 rounded-full' src='/catgroup.jpg'></img>
                 </div>
@@ -114,7 +142,7 @@ const GroupChatInterface = ({ username, socket }) => {
                                         </AvatarFallback>
                                     </Avatar>
                                 ) : !message.isOwn ? (
-                                    <div className="w-10 h-10" /> 
+                                    <div className="w-10 h-10" />
                                 ) : null}
 
                                 <div className={`flex-1 min-w-0 ${message.isOwn ? 'flex justify-end' : ''}`}>
@@ -144,17 +172,33 @@ const GroupChatInterface = ({ username, socket }) => {
                         );
                     })}
 
+                    {typingUsers.length > 0 && (
+                        <div className="flex items-center gap-2 px-4 py-2">
+                            <div className="flex gap-1">
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                            <span className="text-sm text-gray-500 italic">
+                                {typingUsers.length === 1
+                                    ? `${typingUsers[0]} is typing...`
+                                    : `${typingUsers.join(', ')} are typing...`
+                                }
+                            </span>
+                        </div>
+                    )}
+
                     <div ref={messagesEndRef} />
                 </div>
             </div>
 
-            <div className="bg-background border-t px-6 py-3">
+            <div className="bg-background border-t px-6 py-3 flex-shrink-0">
                 <div className="max-w-3xl mx-auto">
                     <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                         <Input
                             type="text"
                             value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
+                            onChange={handleTyping}
                             placeholder="Message..."
                             className="flex-1 h-10 bg-secondary/50 border-0 focus-visible:ring-1"
                         />
