@@ -20,9 +20,17 @@ const ROOM = 'group';
 io.on('connection', (socket) => {
   console.log('a user connected', socket.id);
 
-  socket.on('joinRoom', async (userName) => {
-    console.log(userName, 'is joining the room');
+  socket.on('joinRoom', async (username) => {
+    console.log(username, 'is joining the room');
+
     await socket.join(ROOM);
+
+    //send to all
+    //io.to(ROOM).emit("roomNotice", username);
+ 
+    //brodcast
+    socket.broadcast.emit("roomNotice", username);
+
   })
 });
 
