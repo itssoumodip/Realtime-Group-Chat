@@ -4,7 +4,7 @@ import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Send } from 'lucide-react';
 
-const ChatInterface = ({ username }) => {
+const ChatInterface = ({ username, socket }) => {
   const [messages, setMessages] = useState([
     { id: 1, sender: username, text: 'Hi', timestamp: '14:53', isOwn: true },
     { id: 2, sender: username, text: 'How are you?', timestamp: '14:53', isOwn: true }
@@ -42,13 +42,21 @@ const ChatInterface = ({ username }) => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('connect', () => {
+      console.log('Connected to server', socket.id);
+    })
+  })
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (newMessage.trim()) {
       const now = new Date();
-      const timestamp = now.getHours().toString().padStart(2, '0') + ':' + 
-                       now.getMinutes().toString().padStart(2, '0');
-      
+      const timestamp = now.getHours().toString().padStart(2, '0') + ':' +
+        now.getMinutes().toString().padStart(2, '0');
+
       const message = {
         id: Date.now(),
         sender: username,
@@ -56,28 +64,28 @@ const ChatInterface = ({ username }) => {
         timestamp: timestamp,
         isOwn: true
       };
-      
+
       setMessages(prevMessages => [...prevMessages, message]);
       setNewMessage('');
 
       // Simulate responses from other users
       const numberOfResponses = Math.floor(Math.random() * 2) + 1; // 1-2 responses
-      
+
       for (let i = 0; i < numberOfResponses; i++) {
         const delay = (i + 1) * 1000; // Delay before showing typing indicator
         const typingDuration = 1500 + Math.random() * 1000; // How long typing shows
-        
+
         setTimeout(() => {
           const randomUser = demoUsers[Math.floor(Math.random() * demoUsers.length)];
           setTypingUser(randomUser);
           setIsTyping(true);
-          
+
           setTimeout(() => {
             const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];
             const responseTime = new Date();
-            const responseTimestamp = responseTime.getHours().toString().padStart(2, '0') + ':' + 
-                                     responseTime.getMinutes().toString().padStart(2, '0');
-            
+            const responseTimestamp = responseTime.getHours().toString().padStart(2, '0') + ':' +
+              responseTime.getMinutes().toString().padStart(2, '0');
+
             const demoMessage = {
               id: Date.now() + i,
               sender: randomUser,
@@ -85,7 +93,7 @@ const ChatInterface = ({ username }) => {
               timestamp: responseTimestamp,
               isOwn: false
             };
-            
+
             setMessages(prevMessages => [...prevMessages, demoMessage]);
             setIsTyping(false);
             setTypingUser('');
@@ -136,11 +144,10 @@ const ChatInterface = ({ username }) => {
                       {message.timestamp}
                     </span>
                   </div>
-                  <div className={`relative inline-block ${
-                    message.isOwn 
-                      ? 'bg-gradient-to-br from-gray-800 to-black text-white rounded-2xl rounded-tr-md' 
+                  <div className={`relative inline-block ${message.isOwn
+                      ? 'bg-gradient-to-br from-gray-800 to-black text-white rounded-2xl rounded-tr-md'
                       : 'bg-gradient-to-br from-gray-50 to-gray-100 text-foreground border border-gray-200/50 rounded-2xl rounded-tl-md'
-                  } px-4 py-3 backdrop-blur-sm`}>
+                    } px-4 py-3 backdrop-blur-sm`}>
                     <p className="text-sm break-words leading-relaxed text-left">
                       {message.text}
                     </p>
@@ -149,7 +156,7 @@ const ChatInterface = ({ username }) => {
               </div>
             </div>
           ))}
-          
+
           {/* Typing Indicator */}
           {isTyping && (
             <div className="flex items-start gap-3 animate-pulse">
@@ -176,7 +183,7 @@ const ChatInterface = ({ username }) => {
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
       </div>
