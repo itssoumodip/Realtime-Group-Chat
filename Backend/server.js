@@ -9,9 +9,17 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 const server = createServer(app);
+
+// Dynamic CORS based on environment
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [process.env.CLIENT_URL]
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
   },
 });
 

@@ -9,7 +9,7 @@ const Footer = () => {
                     href="https://github.com/itssoumodip"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-gray-600 hover:underline transition-all"
+                    className="font-semibold text-[#075E54] hover:underline transition-all"
                 >
                     Soumodip
                 </a>
