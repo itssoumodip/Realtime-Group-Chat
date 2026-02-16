@@ -19,7 +19,7 @@ const NameEntry = ({ onNameSubmit }) => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
-            <MessageCircle className="w-8 h-8 text-primary-foreground" />
+            <img className='h-16 w-16 rounded-full' src='/catgroup.jpg'></img>
           </div>
           <h1 className="text-3xl font-semibold text-foreground mb-2">Welcome</h1>
           <p className="text-muted-foreground text-sm">Enter your name to join the conversation</p>
