@@ -43,10 +43,12 @@ const ChatInterface = ({ username, socket }) => {
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) return; 
 
     socket.on('connect', () => {
       console.log('Connected to server', socket.id);
+
+      
     })
   })
 

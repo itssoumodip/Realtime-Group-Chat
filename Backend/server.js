@@ -15,8 +15,15 @@ const io = new Server(server, {
   },
 });
 
+const ROOM = 'group';
+
 io.on('connection', (socket) => {
   console.log('a user connected', socket.id);
+
+  socket.on('joinRoom', async (userName) => {
+    console.log(userName, 'is joining the room');
+    await socket.join(ROOM);
+  })
 });
 
 app.get('/', (req, res) => {

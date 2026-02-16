@@ -7,12 +7,22 @@ function App() {
   const [username, setUsername] = useState('');
   const socket = useRef(null);
 
-  const handleNameSubmit = (name) => {
-    setUsername(name);
+  const 
+  handleNameSubmit = (name) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    
+    socket.current.emit('joinRoom', name);
+    setUsername(trimmed);
   };
 
   useEffect(() => {
     socket.current = connectWS();
+
+    socket.current.on('connect', () => {
+      console.log('Connected to server', socket.current.id);
+    })
   }, [])
 
   return (
