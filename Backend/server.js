@@ -29,8 +29,11 @@ io.on('connection', (socket) => {
     //io.to(ROOM).emit("roomNotice", username);
  
     //brodcast
-    socket.broadcast.emit("roomNotice", username);
+    socket.broadcast.emit('roomNotice', username);
+  })
 
+  socket.on('chatMessage', (msg) => {
+    socket.broadcast.emit('chatMessage', username);
   })
 });
 

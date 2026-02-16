@@ -26,6 +26,10 @@ function App() {
       socket.current.on('roomNotice', (username) => {
         console.log(`${username} joined the group!`);
       }) //popup tostify
+
+      socket.current.on('chatMessage', (msg) => {
+        console.log(`${username} joined the group!`);
+      })
     })
   }, [])
 
