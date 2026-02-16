@@ -41,7 +41,7 @@ const GroupChatInterface = ({ username, socket }) => {
                 timestamp: timestamp,
                 isOwn: data.username === username
             };
-
+ 
             setMessages((prev) => [...prev, newMsg]);
         })
 
