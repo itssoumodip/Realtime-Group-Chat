@@ -3,11 +3,13 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Send } from 'lucide-react';
+import { toast } from 'sonner';
 
 const GroupChatInterface = ({ username, socket }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [typingUsers, setTypingUsers] = useState([]);
+    const [members, setMembers] = useState([]);
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
@@ -24,6 +26,23 @@ const GroupChatInterface = ({ username, socket }) => {
 
         socket.on('roomNotice', (data) => {
             console.log(`${data.username} ${data.action} the group`);
+
+            const displayName = data.username === username ? 'You' : data.username;
+
+            if (data.action === 'joined') {
+                toast.success(`${displayName} joined the group`, {
+                    duration: 3000,
+                });
+            } else if (data.action === 'left') {
+                toast.error(`${displayName} left the group`, {
+                    duration: 3000,
+                });
+            }
+        });
+
+        socket.on('membersList', (membersList) => {
+            console.log('Members list updated:', membersList);
+            setMembers(membersList);
         });
 
         socket.on('chatMessage', (data) => {
@@ -65,6 +84,7 @@ const GroupChatInterface = ({ username, socket }) => {
 
         return () => {
             socket.off('roomNotice');
+            socket.off('membersList');
             socket.off('chatMessage');
             socket.off('typing');
         };
@@ -106,6 +126,27 @@ const GroupChatInterface = ({ username, socket }) => {
                 </div>
                 <div className="flex-1">
                     <div className="text-sm font-medium text-[#303030]">Realtime Group Chat</div>
+                    <div className="text-xs text-gray-500">
+                        {typingUsers.length > 0 ? (
+                            <span className="italic text-[#075E54]">
+                                {typingUsers.length === 1
+                                    ? `${typingUsers[0]} is typing...`
+                                    : `${typingUsers.join(', ')} are typing...`
+                                }
+                            </span>
+                        ) : members.length > 0 ?
+                            (
+                                <>
+                                    {members
+                                        .map(member => member === username ? 'You' : member)
+                                        .slice(0, 3)
+                                        .join(', ')}
+                                    {members.length > 3 && ` +${members.length - 3} more`}
+                                </>
+                            ) : (
+                                'No members yet'
+                            )}
+                    </div>
                 </div>
                 <div className="text-sm text-gray-500">
                     Signed in as{' '}
@@ -113,7 +154,7 @@ const GroupChatInterface = ({ username, socket }) => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4 hide-scrollbar">
                 <div className="max-w-3xl mx-auto space-y-4">
                     {messages.length === 0 && (
                         <div className="text-center text-gray-500 mt-8">
@@ -132,7 +173,7 @@ const GroupChatInterface = ({ username, socket }) => {
                         return (
                             <div
                                 key={message.id}
-                                className={`flex items-start gap-3 ${message.isOwn ? 'flex-row-reverse' : ''} ${!isGroupStart ? (message.isOwn ? 'ml-0' : 'ml-0') : ''}`}
+                                className={`flex items-start gap-3 ${message.isOwn ? 'flex-row-reverse message-outgoing' : 'message-incoming'} ${!isGroupStart ? (message.isOwn ? 'ml-0' : 'ml-0') : ''}`}
                                 style={{ marginTop: !isGroupStart ? '2px' : '16px' }}
                             >
                                 {!message.isOwn && isGroupStart ? (
@@ -171,22 +212,6 @@ const GroupChatInterface = ({ username, socket }) => {
                             </div>
                         );
                     })}
-
-                    {typingUsers.length > 0 && (
-                        <div className="flex items-center gap-2 px-4 py-2">
-                            <div className="flex gap-1">
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                            </div>
-                            <span className="text-sm text-gray-500 italic">
-                                {typingUsers.length === 1
-                                    ? `${typingUsers[0]} is typing...`
-                                    : `${typingUsers.join(', ')} are typing...`
-                                }
-                            </span>
-                        </div>
-                    )}
 
                     <div ref={messagesEndRef} />
                 </div>

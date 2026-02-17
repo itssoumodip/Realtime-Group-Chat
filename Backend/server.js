@@ -10,7 +10,6 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 const server = createServer(app);
 
-// Dynamic CORS based on environment
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [process.env.CLIENT_URL]
   : ['http://localhost:5173', 'http://localhost:3000'];
@@ -24,6 +23,7 @@ const io = new Server(server, {
 });
 
 const ROOM = 'group';
+const groupMembers = new Set();
 
 io.on('connection', (socket) => {
   console.log('a user connected', socket.id);
@@ -34,8 +34,11 @@ io.on('connection', (socket) => {
 
     await socket.join(ROOM);
 
-    // Store username with socket for later use
     socket.username = username;
+
+    groupMembers.add(username);
+
+    io.to(ROOM).emit('membersList', Array.from(groupMembers));
 
     //send to all
     io.to(ROOM).emit("roomNotice", { username, action: 'joined' });
@@ -59,6 +62,9 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('user disconnected', socket.id);
     if (socket.username) {
+
+      groupMembers.delete(socket.username);
+      io.to(ROOM).emit('membersList', Array.from(groupMembers));
       io.to(ROOM).emit('roomNotice', { username: socket.username, action: 'left' });
     }
   });

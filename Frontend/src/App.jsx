@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Toaster } from 'sonner';
 import ModeSelector from './components/ModeSelector';
 import NameEntry from './components/NameEntry';
 import GroupChatInterface from './components/GroupChatInterface';
@@ -48,16 +49,31 @@ function App() {
 
   // Render based on current state
   if (!chatMode) {
-    return <ModeSelector onModeSelect={handleModeSelect} />;
+    return (
+      <>
+        <Toaster position="top-center" richColors />
+        <ModeSelector onModeSelect={handleModeSelect} />
+      </>
+    );
   }
 
   if (!username) {
-    return <NameEntry onNameSubmit={handleNameSubmit} />;
+    return (
+      <>
+        <Toaster position="top-center" richColors />
+        <NameEntry onNameSubmit={handleNameSubmit} />
+      </>
+    );
   }
 
   // Render appropriate chat interface
   if (chatMode === 'group') {
-    return <GroupChatInterface username={username} socket={socket.current} />;
+    return (
+      <>
+        <Toaster position="top-center" richColors />
+        <GroupChatInterface username={username} socket={socket.current} />
+      </>
+    );
   }
 
   if (chatMode === 'single') {
