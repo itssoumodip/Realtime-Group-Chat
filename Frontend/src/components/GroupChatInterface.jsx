@@ -10,6 +10,7 @@ const GroupChatInterface = ({ username, socket }) => {
     const [newMessage, setNewMessage] = useState('');
     const [typingUsers, setTypingUsers] = useState([]);
     const [members, setMembers] = useState([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true);
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
@@ -20,6 +21,43 @@ const GroupChatInterface = ({ username, socket }) => {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    const formatTime = (date) => {
+        let hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12 || 12;
+        return `${hours}:${minutes} ${ampm}`;
+    }; 
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const response = await fetch(`${apiUrl}/api/messages`);
+                const data = await response.json();
+
+                if (data.messages) {
+                    const formattedMessages = data.messages.map(msg => ({
+                        id: msg.id,
+                        sender: msg.username,
+                        text: msg.message,
+                        isOwn: msg.username === username,
+                        timestamp: formatTime(new Date(msg.timestamp))
+                    }));
+                    setMessages(formattedMessages);
+                    console.log(`Loaded ${data.count} messages from history`);
+                }
+            } catch (error) {
+                console.error('Error loading message history:', error);
+                toast.error('Failed to load message history');
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        };
+
+        loadHistory();
+    }, [username]);
 
     useEffect(() => {
         if (!socket) return;

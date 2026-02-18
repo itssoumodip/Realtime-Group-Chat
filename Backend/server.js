@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import express from 'express';
 import { Server } from "socket.io";
+import cors from 'cors';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,7 +13,14 @@ const server = createServer(app);
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [process.env.CLIENT_URL]
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  : ['http://localhost:5173'];
+
+// Middleware
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+app.use(express.json());
 
 const io = new Server(server, {
   cors: {
@@ -44,7 +52,7 @@ io.on('connection', (socket) => {
     io.to(ROOM).emit("roomNotice", { username, action: 'joined' });
   })
 
-  socket.on('chatMessage', (data) => {
+  socket.on('chatMessage', async (data) => {
     const username = socket.username || data.username;
     const message = data.message;
 
@@ -77,3 +85,4 @@ app.get('/', (req, res) => {
 server.listen(PORT, () => {
   console.log(`server running at http://localhost:${PORT}`);
 });
+
