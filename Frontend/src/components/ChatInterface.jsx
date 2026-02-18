@@ -5,34 +5,11 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { Send } from 'lucide-react';
 
 const ChatInterface = ({ username, socket }) => {
-  const [messages, setMessages] = useState([
-    { id: 1, sender: username, text: 'Hi', timestamp: '14:53', isOwn: true },
-    { id: 2, sender: username, text: 'How are you?', timestamp: '14:53', isOwn: true }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState('');
   const messagesEndRef = useRef(null);
-
-  // Demo users and their possible responses
-  const demoUsers = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'];
-  const demoResponses = [
-    "That's interesting!",
-    "I agree with you",
-    "Tell me more about that",
-    "Really? That's cool!",
-    "Nice! 👍",
-    "I'm doing great, thanks!",
-    "What do you think about this?",
-    "Yeah, totally!",
-    "Haha, that's funny 😄",
-    "Good point!",
-    "I see what you mean",
-    "Awesome!",
-    "Thanks for sharing!",
-    "That makes sense",
-    "Let's discuss this further"
-  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -43,12 +20,12 @@ const ChatInterface = ({ username, socket }) => {
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (!socket) return; 
+    if (!socket) return;
 
     socket.on('connect', () => {
       console.log('Connected to server', socket.id);
 
-      
+
     })
   })
 
@@ -70,37 +47,11 @@ const ChatInterface = ({ username, socket }) => {
       setMessages(prevMessages => [...prevMessages, message]);
       setNewMessage('');
 
-      // Simulate responses from other users
-      const numberOfResponses = Math.floor(Math.random() * 2) + 1; // 1-2 responses
-
-      for (let i = 0; i < numberOfResponses; i++) {
-        const delay = (i + 1) * 1000; // Delay before showing typing indicator
-        const typingDuration = 1500 + Math.random() * 1000; // How long typing shows
-
-        setTimeout(() => {
-          const randomUser = demoUsers[Math.floor(Math.random() * demoUsers.length)];
-          setTypingUser(randomUser);
-          setIsTyping(true);
-
-          setTimeout(() => {
-            const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];
-            const responseTime = new Date();
-            const responseTimestamp = responseTime.getHours().toString().padStart(2, '0') + ':' +
-              responseTime.getMinutes().toString().padStart(2, '0');
-
-            const demoMessage = {
-              id: Date.now() + i,
-              sender: randomUser,
-              text: randomResponse,
-              timestamp: responseTimestamp,
-              isOwn: false
-            };
-
-            setMessages(prevMessages => [...prevMessages, demoMessage]);
-            setIsTyping(false);
-            setTypingUser('');
-          }, typingDuration);
-        }, delay);
+      if (socket) {
+        socket.emit('chatMessage', {
+          username,
+          message: newMessage.trim()
+        });
       }
     }
   };
@@ -147,8 +98,8 @@ const ChatInterface = ({ username, socket }) => {
                     </span>
                   </div>
                   <div className={`relative inline-block ${message.isOwn
-                      ? 'bg-gradient-to-br from-gray-800 to-black text-white rounded-2xl rounded-tr-md'
-                      : 'bg-gradient-to-br from-gray-50 to-gray-100 text-foreground border border-gray-200/50 rounded-2xl rounded-tl-md'
+                    ? 'bg-gradient-to-br from-gray-800 to-black text-white rounded-2xl rounded-tr-md'
+                    : 'bg-gradient-to-br from-gray-50 to-gray-100 text-foreground border border-gray-200/50 rounded-2xl rounded-tl-md'
                     } px-4 py-3 backdrop-blur-sm`}>
                     <p className="text-sm break-words leading-relaxed text-left">
                       {message.text}
