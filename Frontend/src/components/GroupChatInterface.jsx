@@ -28,7 +28,7 @@ const GroupChatInterface = ({ username, socket }) => {
         const ampm = hours >= 12 ? 'pm' : 'am';
         hours = hours % 12 || 12;
         return `${hours}:${minutes} ${ampm}`;
-    }; 
+    };
 
     useEffect(() => {
         const loadHistory = async () => {
@@ -157,10 +157,10 @@ const GroupChatInterface = ({ username, socket }) => {
     };
 
     return (
-        <div className="flex flex-col h-screen max-h-screen overflow-hidden">
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-[#075E54] flex items-center justify-center">
-                    <img className='h-10 w-10 rounded-full' src='/catgroup.jpg'></img>
+        <div className="flex flex-col h-[100dvh] overflow-hidden">
+            <div className="flex items-center gap-3 px-3 py-2 md:px-4 md:py-3 border-b border-gray-200 flex-shrink-0">
+                <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-[#075E54] flex items-center justify-center">
+                    <img className='h-8 w-8 md:h-10 md:w-10 rounded-full' src='/catgroup.jpg'></img>
                 </div>
                 <div className="flex-1">
                     <div className="text-sm font-medium text-[#303030]">Realtime Group Chat</div>
