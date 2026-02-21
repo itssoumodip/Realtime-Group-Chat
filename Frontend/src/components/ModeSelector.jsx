@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Users, MessageCircle } from 'lucide-react';
+import { Users, MessageCircle, Download } from 'lucide-react';
 import Footer from './Footer';
 
 const ModeSelector = ({ onModeSelect }) => {
+    const [installPrompt, setInstallPrompt] = useState(null);
+    const [installed, setInstalled] = useState(false);
+
+    useEffect(() => {
+        const handler = (e) => {
+            e.preventDefault();
+            setInstallPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        window.addEventListener('appinstalled', () => {
+            setInstalled(true);
+            setInstallPrompt(null);
+        });
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstall = async () => {
+        if (installPrompt) {
+            installPrompt.prompt();
+            const { outcome } = await installPrompt.userChoice;
+            if (outcome === 'accepted') {
+                setInstalled(true);
+                setInstallPrompt(null);
+            }
+        } else {
+            alert('To install: open this page in Chrome/Edge and tap the install icon (⊕) in the address bar, or use browser menu → "Add to Home Screen".');
+        }
+    };
     return (
         <div className="h-screen bg-gradient-to-br from-gray200 to-gray-100 flex items-center justify-center p-4">
             <div className="w-full max-h-screen py-6 max-w-2xl">
@@ -17,6 +45,19 @@ const ModeSelector = ({ onModeSelect }) => {
                     <p className="text-gray-600 sm:text-lg text-md">
                         Choose ur chat mode to get started
                     </p>
+
+                    {/* Always-visible Install App button */}
+                    {!installed ? (
+                        <button
+                            onClick={handleInstall}
+                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#075E54] text-white text-sm font-medium hover:bg-[#064a43] transition-colors shadow-md"
+                        >
+                            <Download className="h-4 w-4" />
+                            Install App
+                        </button>
+                    ) : (
+                        <p className="mt-3 text-sm text-[#075E54] font-medium">✓ App installed!</p>
+                    )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
@@ -41,7 +82,7 @@ const ModeSelector = ({ onModeSelect }) => {
 
                     <div
                         onClick={() => onModeSelect('single')}
-                        className="bg-d-2xl p-8 border-2 border-gray-200 hover:border-[#128C7E] cursor-pointer transition-all hover:shadow-lg group relative overflow-hidden"
+                        className="bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-[#128C7E] cursor-pointer transition-all hover:shadow-lg group relative overflow-hidden"
                     >
                         <div className="h-16 w-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                             <img className='h-16 w-16 rounded-full' src='/singlecat.jpg'></img>
