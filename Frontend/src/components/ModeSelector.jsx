@@ -5,7 +5,12 @@ import Footer from './Footer';
 
 const ModeSelector = ({ onModeSelect }) => {
     const [installPrompt, setInstallPrompt] = useState(null);
-    const [installed, setInstalled] = useState(false);
+    // True if already running as installed PWA OR previously installed
+    const [installed, setInstalled] = useState(() => {
+        // Running in standalone = already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) return true;
+        return localStorage.getItem('pwaInstalled') === 'true';
+    });
 
     useEffect(() => {
         const handler = (e) => {
@@ -16,6 +21,7 @@ const ModeSelector = ({ onModeSelect }) => {
         window.addEventListener('appinstalled', () => {
             setInstalled(true);
             setInstallPrompt(null);
+            localStorage.setItem('pwaInstalled', 'true');
         });
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
@@ -27,6 +33,7 @@ const ModeSelector = ({ onModeSelect }) => {
             if (outcome === 'accepted') {
                 setInstalled(true);
                 setInstallPrompt(null);
+                localStorage.setItem('pwaInstalled', 'true');
             }
         } else {
             alert('To install: open this page in Chrome/Edge and tap the install icon (⊕) in the address bar, or use browser menu → "Add to Home Screen".');
@@ -40,7 +47,7 @@ const ModeSelector = ({ onModeSelect }) => {
                         <img className='h-16 w-16 rounded-full' src='/cats.jpg'></img>
                     </div>
                     <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">
-                        Welcome to Realtime Chat
+                        Welcome to MeowChat
                     </h1>
                     <p className="text-gray-600 sm:text-lg text-md">
                         Choose ur chat mode to get started

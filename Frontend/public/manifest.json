@@ -1,6 +1,6 @@
 {
-    "name": "Realtime Chat",
-    "short_name": "Chat",
+    "name": "MeowChat",
+    "short_name": "Meow",
     "description": "Realtime group and private chat app",
     "theme_color": "#075E54",
     "background_color": "#ffffff",
