@@ -2,10 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, Check, CheckCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// ── Tick component ─────────────────────────────────────────────────────────
+// status: 'sending' | 'delivered' | 'read'
+const MessageTick = ({ status }) => {
+    if (status === 'sending') {
+        return <Check className="inline h-3 w-3 ml-1 text-white/50" />;
+    }
+    if (status === 'delivered') {
+        return <CheckCheck className="inline h-3 w-3 ml-1 text-white/50" />;
+    }
+    if (status === 'read') {
+        return <CheckCheck className="inline h-3 w-3 ml-1 text-blue-400" />;
+    }
+    return null;
+};
 
 const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
     const [messages, setMessages] = useState([]);
@@ -43,7 +58,10 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
                     sender: msg.sender === currentUser.uid ? currentUser.username : otherUser.username,
                     text: msg.text,
                     isOwn: msg.sender === currentUser.uid,
-                    timestamp: formatTime(new Date(msg.timestamp))
+                    timestamp: formatTime(new Date(msg.timestamp)),
+                    // Historical messages from Firestore are delivered; mark own as 'read'
+                    // since if they're in history, the other user likely loaded the chat too.
+                    status: msg.sender === currentUser.uid ? 'delivered' : null
                 }));
 
                 setMessages(formatted);
@@ -57,7 +75,7 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
         fetchMessages();
     }, [chatId]);
 
-    // Join private Socket.IO room and listen for real-time messages
+    // Socket.IO: join private room, listen for messages and read receipts
     useEffect(() => {
         if (!socket) return;
 
@@ -68,36 +86,54 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
             username: currentUser.username
         });
 
-        // Listen for incoming private messages
+        // Tell the other user we've opened this chat (marks their sent msgs as read)
+        socket.emit('markRead', { chatId, readerUserId: currentUser.uid });
+
+        // Receive new messages in real-time
         socket.on('privateMessage', (data) => {
             const incomingMsg = {
                 id: `live_${Date.now()}_${Math.random()}`,
                 sender: data.sender === currentUser.uid ? currentUser.username : otherUser.username,
                 text: data.text,
                 isOwn: data.sender === currentUser.uid,
-                timestamp: formatTime(new Date(data.timestamp))
+                timestamp: formatTime(new Date(data.timestamp)),
+                status: data.sender === currentUser.uid ? 'delivered' : null
             };
 
             setMessages(prev => {
-                // Avoid duplicate if the sender's own optimistic message is already there
-                // (distinguish by checking if there's already an identical temp message)
+                // Replace optimistic temp message with confirmed one (for the sender)
                 const lastMsg = prev[prev.length - 1];
                 if (
-                    lastMsg &&
-                    lastMsg.id?.startsWith('temp_') &&
+                    lastMsg?.id?.startsWith('temp_') &&
                     lastMsg.isOwn &&
                     incomingMsg.isOwn &&
                     lastMsg.text === incomingMsg.text
                 ) {
-                    // Replace the temp message with the confirmed one
                     return [...prev.slice(0, -1), incomingMsg];
                 }
                 return [...prev, incomingMsg];
             });
+
+            // If we're the receiver, mark as read immediately
+            if (data.sender !== currentUser.uid) {
+                socket.emit('markRead', { chatId, readerUserId: currentUser.uid });
+            }
+        });
+
+        // Other user opened the chat → turn our sent messages to blue ticks
+        socket.on('messagesRead', ({ readerUserId }) => {
+            if (readerUserId !== currentUser.uid) {
+                setMessages(prev =>
+                    prev.map(msg =>
+                        msg.isOwn ? { ...msg, status: 'read' } : msg
+                    )
+                );
+            }
         });
 
         return () => {
             socket.off('privateMessage');
+            socket.off('messagesRead');
         };
     }, [socket, chatId]);
 
@@ -108,17 +144,17 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
         const text = newMessage.trim();
         setNewMessage('');
 
-        // Optimistic update
+        // Optimistic update with 'sending' status (single grey tick)
         const tempMsg = {
             id: `temp_${Date.now()}`,
             sender: currentUser.username,
             text,
             isOwn: true,
-            timestamp: formatTime(new Date())
+            timestamp: formatTime(new Date()),
+            status: 'sending'
         };
         setMessages(prev => [...prev, tempMsg]);
 
-        // Emit via socket — server will broadcast and persist
         socket.emit('privateMessage', {
             chatId,
             senderId: currentUser.uid,
@@ -130,6 +166,7 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
 
     return (
         <div className="flex flex-col h-[100dvh] overflow-hidden">
+            {/* Header */}
             <div className="flex items-center gap-3 px-3 py-2 md:px-4 md:py-3 border-b border-gray-200 flex-shrink-0">
                 <button
                     onClick={onBack}
@@ -155,6 +192,7 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
                 </div>
             </div>
 
+            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-6 py-4 hide-scrollbar">
                 <div className="max-w-3xl mx-auto space-y-4">
                     {loading ? (
@@ -168,8 +206,6 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
                     ) : (
                         messages.map((message, index) => {
                             const prevMessage = index > 0 ? messages[index - 1] : null;
-                            const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
-
                             const isGroupStart = !prevMessage || prevMessage.sender !== message.sender;
 
                             return (
@@ -205,8 +241,10 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
                                                 <p className="text-sm break-words leading-relaxed text-left inline">
                                                     {message.text}
                                                 </p>
-                                                <span className={`text-xs ml-2 ${message.isOwn ? 'text-white/60' : 'text-gray-500'}`}>
+                                                <span className={`text-xs ml-2 align-middle ${message.isOwn ? 'text-white/60' : 'text-gray-500'}`}>
                                                     {message.timestamp}
+                                                    {/* Ticks — only on own messages */}
+                                                    {message.isOwn && <MessageTick status={message.status} />}
                                                 </span>
                                             </div>
                                         </div>
@@ -220,6 +258,7 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
                 </div>
             </div>
 
+            {/* Input */}
             <div className="bg-background border-t px-6 py-3 flex-shrink-0">
                 <div className="max-w-3xl mx-auto">
                     <form onSubmit={handleSendMessage} className="flex items-center gap-2">

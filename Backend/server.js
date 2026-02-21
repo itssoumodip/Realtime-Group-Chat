@@ -300,6 +300,12 @@ io.on('connection', (socket) => {
     console.log(`${username} joined private room: ${chatId}`);
   });
 
+  // Mark messages as read — emit to the room so sender sees blue ticks
+  socket.on('markRead', ({ chatId, readerUserId }) => {
+    // Notify everyone in the room (especially the sender)
+    socket.to(chatId).emit('messagesRead', { chatId, readerUserId });
+  });
+
   // Send a private message — broadcast instantly, save to Firestore
   socket.on('privateMessage', async ({ chatId, senderId, senderName, text, members }) => {
     const timestamp = new Date().toISOString();
