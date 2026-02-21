@@ -5,12 +5,13 @@ import Footer from './Footer';
 
 const ModeSelector = ({ onModeSelect }) => {
     const [installPrompt, setInstallPrompt] = useState(null);
-    // True if already running as installed PWA OR previously installed
     const [installed, setInstalled] = useState(() => {
-        // Running in standalone = already installed
         if (window.matchMedia('(display-mode: standalone)').matches) return true;
         return localStorage.getItem('pwaInstalled') === 'true';
     });
+    // Detect iOS Safari (no beforeinstallprompt support)
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
 
     useEffect(() => {
         const handler = (e) => {
@@ -53,16 +54,25 @@ const ModeSelector = ({ onModeSelect }) => {
                         Choose ur chat mode to get started
                     </p>
 
-                    {/* Always-visible Install App button */}
-                    {!installed ? (
-                        <button
-                            onClick={handleInstall}
-                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#075E54] text-white text-sm font-medium hover:bg-[#064a43] transition-colors shadow-md"
-                        >
-                            <Download className="h-4 w-4" />
-                            Install App
-                        </button>
-                    ) : (
+                    {/* Install button — hidden if already installed or running as PWA */}
+                    {!installed && !isInStandaloneMode && (
+                        isIOS ? (
+                            // iOS: can't auto-prompt, show instructions
+                            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm border border-gray-300">
+                                <span>📲</span>
+                                <span>Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install</span>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleInstall}
+                                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#075E54] text-white text-sm font-medium hover:bg-[#064a43] transition-colors shadow-md"
+                            >
+                                <Download className="h-4 w-4" />
+                                Install App
+                            </button>
+                        )
+                    )}
+                    {(installed || isInStandaloneMode) && (
                         <p className="mt-3 text-sm text-[#075E54] font-medium">✓ App installed!</p>
                     )}
                 </div>
