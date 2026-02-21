@@ -302,8 +302,12 @@ io.on('connection', (socket) => {
 
   // Mark messages as read — emit to the room so sender sees blue ticks
   socket.on('markRead', ({ chatId, readerUserId }) => {
-    // Notify everyone in the room (especially the sender)
     socket.to(chatId).emit('messagesRead', { chatId, readerUserId });
+  });
+
+  // Private typing indicator
+  socket.on('privateTyping', ({ chatId, username }) => {
+    socket.to(chatId).emit('privateTyping', { username });
   });
 
   // Send a private message — broadcast instantly, save to Firestore

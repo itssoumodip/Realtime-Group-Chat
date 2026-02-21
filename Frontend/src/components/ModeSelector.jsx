@@ -41,7 +41,7 @@ const ModeSelector = ({ onModeSelect }) => {
 
                     <div
                         onClick={() => onModeSelect('single')}
-                        className="bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-[#128C7E] cursor-pointer transition-all hover:shadow-lg group relative overflow-hidden"
+                        className="bg-d-2xl p-8 border-2 border-gray-200 hover:border-[#128C7E] cursor-pointer transition-all hover:shadow-lg group relative overflow-hidden"
                     >
                         <div className="h-16 w-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                             <img className='h-16 w-16 rounded-full' src='/singlecat.jpg'></img>

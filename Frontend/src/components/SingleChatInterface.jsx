@@ -26,7 +26,9 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
+    const [otherIsTyping, setOtherIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
 
     const chatId = [currentUser.uid, otherUser.id].sort().join('_');
 
@@ -120,6 +122,14 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
             }
         });
 
+        // Listen for typing events from the other user
+        socket.on('privateTyping', () => {
+            setOtherIsTyping(true);
+            // Clear after 3 seconds of silence
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => setOtherIsTyping(false), 3000);
+        });
+
         // Other user opened the chat → turn our sent messages to blue ticks
         socket.on('messagesRead', ({ readerUserId }) => {
             if (readerUserId !== currentUser.uid) {
@@ -134,8 +144,17 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
         return () => {
             socket.off('privateMessage');
             socket.off('messagesRead');
+            socket.off('privateTyping');
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         };
     }, [socket, chatId]);
+
+    const handleTyping = (e) => {
+        setNewMessage(e.target.value);
+        if (socket && e.target.value.length > 0) {
+            socket.emit('privateTyping', { chatId, username: currentUser.username });
+        }
+    };
 
     const handleSendMessage = (e) => {
         e.preventDefault();
@@ -183,7 +202,13 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
 
                 <div className="flex-1">
                     <div className="text-sm font-medium text-[#303030]">{otherUser.username}</div>
-                    <div className="text-xs text-gray-500">{otherUser.email}</div>
+                    <div className="text-xs text-gray-500">
+                        {otherIsTyping ? (
+                            <span className="italic text-[#075E54]">typing...</span>
+                        ) : (
+                            otherUser.email
+                        )}
+                    </div>
                 </div>
 
                 <div className="text-sm text-gray-500">
@@ -265,7 +290,7 @@ const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
                         <Input
                             type="text"
                             value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
+                            onChange={handleTyping}
                             placeholder="Message..."
                             className="flex-1 h-10 bg-secondary/50 border-0 focus-visible:ring-1"
                         />

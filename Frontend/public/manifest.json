@@ -1,0 +1,24 @@
+{
+    "name": "Realtime Chat",
+    "short_name": "Chat",
+    "description": "Realtime group and private chat app",
+    "theme_color": "#075E54",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "orientation": "portrait",
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "/cats.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg"
+        },
+        {
+            "src": "/cats.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        }
+    ]
+}
