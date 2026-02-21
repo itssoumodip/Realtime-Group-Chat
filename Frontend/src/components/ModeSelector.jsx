@@ -110,8 +110,8 @@ const ModeSelector = ({ onModeSelect }) => {
                         <p className="text-gray-600 sm:text-lg text-md mb-4">
                             Have a private one-on-one conversation with another user
                         </p>
-                        <div className="sm:flex items-center text-gray-800 font-medium">
-                            Coming Soon
+                        <div className="sm:flex items-center text-[#075E54] font-medium">
+                            Get Started
                             <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                         </div>
                     </div>
