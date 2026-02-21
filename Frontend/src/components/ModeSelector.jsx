@@ -56,11 +56,6 @@ const ModeSelector = ({ onModeSelect }) => {
                             Coming Soon
                             <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                         </div>
-
-                        {/* Coming Soon Badge */}
-                        <div className="absolute top-4 right-4 bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
-                            Soon
-                        </div>
                     </div>
                 </div>
 
