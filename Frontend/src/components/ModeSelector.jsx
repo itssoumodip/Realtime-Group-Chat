@@ -72,9 +72,7 @@ const ModeSelector = ({ onModeSelect }) => {
                             </button>
                         )
                     )}
-                    {(installed || isInStandaloneMode) && (
-                        <p className="mt-3 text-sm text-[#075E54] font-medium">✓ App installed!</p>
-                    )}
+                    {(installed || isInStandaloneMode) && null}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
