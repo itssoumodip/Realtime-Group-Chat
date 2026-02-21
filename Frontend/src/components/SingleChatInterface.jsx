@@ -7,14 +7,12 @@ import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const SingleChatInterface = ({ currentUser, otherUser, onBack }) => {
+const SingleChatInterface = ({ currentUser, otherUser, socket, onBack }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef(null);
-    const pollRef = useRef(null);
 
-    // Generate consistent Chat ID by sorting UIDs
     const chatId = [currentUser.uid, otherUser.id].sort().join('_');
 
     const scrollToBottom = () => {
@@ -33,38 +31,79 @@ const SingleChatInterface = ({ currentUser, otherUser, onBack }) => {
         return `${hours}:${minutes} ${ampm}`;
     };
 
-    const fetchMessages = async () => {
-        try {
-            const response = await fetch(`${API_URL}/api/chats/${chatId}/messages`);
-            const data = await response.json();
-
-            const formatted = (data.messages || []).map(msg => ({
-                id: msg.id,
-                sender: msg.sender === currentUser.uid ? currentUser.username : otherUser.username,
-                text: msg.text,
-                isOwn: msg.sender === currentUser.uid,
-                timestamp: formatTime(new Date(msg.timestamp))
-            }));
-
-            setMessages(formatted);
-        } catch (error) {
-            console.error('Error fetching messages:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // Load chat history once on mount
     useEffect(() => {
-        fetchMessages();
+        const fetchMessages = async () => {
+            try {
+                const response = await fetch(`${API_URL}/api/chats/${chatId}/messages`);
+                const data = await response.json();
 
-        // Poll every 3 seconds for new messages
-        pollRef.current = setInterval(fetchMessages, 3000);
-        return () => clearInterval(pollRef.current);
+                const formatted = (data.messages || []).map(msg => ({
+                    id: msg.id,
+                    sender: msg.sender === currentUser.uid ? currentUser.username : otherUser.username,
+                    text: msg.text,
+                    isOwn: msg.sender === currentUser.uid,
+                    timestamp: formatTime(new Date(msg.timestamp))
+                }));
+
+                setMessages(formatted);
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMessages();
     }, [chatId]);
 
-    const handleSendMessage = async (e) => {
+    // Join private Socket.IO room and listen for real-time messages
+    useEffect(() => {
+        if (!socket) return;
+
+        // Join the private room
+        socket.emit('joinPrivateRoom', {
+            chatId,
+            userId: currentUser.uid,
+            username: currentUser.username
+        });
+
+        // Listen for incoming private messages
+        socket.on('privateMessage', (data) => {
+            const incomingMsg = {
+                id: `live_${Date.now()}_${Math.random()}`,
+                sender: data.sender === currentUser.uid ? currentUser.username : otherUser.username,
+                text: data.text,
+                isOwn: data.sender === currentUser.uid,
+                timestamp: formatTime(new Date(data.timestamp))
+            };
+
+            setMessages(prev => {
+                // Avoid duplicate if the sender's own optimistic message is already there
+                // (distinguish by checking if there's already an identical temp message)
+                const lastMsg = prev[prev.length - 1];
+                if (
+                    lastMsg &&
+                    lastMsg.id?.startsWith('temp_') &&
+                    lastMsg.isOwn &&
+                    incomingMsg.isOwn &&
+                    lastMsg.text === incomingMsg.text
+                ) {
+                    // Replace the temp message with the confirmed one
+                    return [...prev.slice(0, -1), incomingMsg];
+                }
+                return [...prev, incomingMsg];
+            });
+        });
+
+        return () => {
+            socket.off('privateMessage');
+        };
+    }, [socket, chatId]);
+
+    const handleSendMessage = (e) => {
         e.preventDefault();
-        if (!newMessage.trim()) return;
+        if (!newMessage.trim() || !socket) return;
 
         const text = newMessage.trim();
         setNewMessage('');
@@ -79,25 +118,18 @@ const SingleChatInterface = ({ currentUser, otherUser, onBack }) => {
         };
         setMessages(prev => [...prev, tempMsg]);
 
-        try {
-            await fetch(`${API_URL}/api/chats/${chatId}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    senderId: currentUser.uid,
-                    text,
-                    members: [currentUser.uid, otherUser.id]
-                })
-            });
-        } catch (error) {
-            console.error('Error sending message:', error);
-            toast.error('Failed to send message');
-        }
+        // Emit via socket — server will broadcast and persist
+        socket.emit('privateMessage', {
+            chatId,
+            senderId: currentUser.uid,
+            senderName: currentUser.username,
+            text,
+            members: [currentUser.uid, otherUser.id]
+        });
     };
 
     return (
         <div className="flex flex-col h-[100dvh] overflow-hidden">
-            {/* Header — same style as GroupChatInterface */}
             <div className="flex items-center gap-3 px-3 py-2 md:px-4 md:py-3 border-b border-gray-200 flex-shrink-0">
                 <button
                     onClick={onBack}
@@ -123,7 +155,6 @@ const SingleChatInterface = ({ currentUser, otherUser, onBack }) => {
                 </div>
             </div>
 
-            {/* Messages area — same style as GroupChatInterface */}
             <div className="flex-1 overflow-y-auto px-6 py-4 hide-scrollbar">
                 <div className="max-w-3xl mx-auto space-y-4">
                     {loading ? (
@@ -140,7 +171,6 @@ const SingleChatInterface = ({ currentUser, otherUser, onBack }) => {
                             const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
 
                             const isGroupStart = !prevMessage || prevMessage.sender !== message.sender;
-                            const isGroupEnd = !nextMessage || nextMessage.sender !== message.sender;
 
                             return (
                                 <div
@@ -190,7 +220,6 @@ const SingleChatInterface = ({ currentUser, otherUser, onBack }) => {
                 </div>
             </div>
 
-            {/* Input bar — same style as GroupChatInterface */}
             <div className="bg-background border-t px-6 py-3 flex-shrink-0">
                 <div className="max-w-3xl mx-auto">
                     <form onSubmit={handleSendMessage} className="flex items-center gap-2">

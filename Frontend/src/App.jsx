@@ -102,6 +102,7 @@ function App() {
           <SingleChatInterface
             currentUser={authUser}
             otherUser={selectedChatUser}
+            socket={socket.current}
             onBack={() => setSelectedChatUser(null)}
           />
         </>

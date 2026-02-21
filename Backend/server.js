@@ -291,6 +291,46 @@ io.on('connection', (socket) => {
     socket.broadcast.to(ROOM).emit('typing', { username });
   });
 
+  // ── Private 1-on-1 Chat ────────────────────────────────────────────────────
+
+  // Join a private room (chatId = sorted UIDs joined by '_')
+  socket.on('joinPrivateRoom', ({ chatId, userId, username }) => {
+    socket.join(chatId);
+    socket.userId = userId;
+    console.log(`${username} joined private room: ${chatId}`);
+  });
+
+  // Send a private message — broadcast instantly, save to Firestore
+  socket.on('privateMessage', async ({ chatId, senderId, senderName, text, members }) => {
+    const timestamp = new Date().toISOString();
+
+    // Emit to everyone in the private room immediately
+    io.to(chatId).emit('privateMessage', {
+      sender: senderId,
+      senderName,
+      text,
+      timestamp
+    });
+
+    // Persist to Firestore
+    try {
+      const chatRef = doc(db, 'chats', chatId);
+      const chatSnap = await getDoc(chatRef);
+      if (!chatSnap.exists()) {
+        await setDoc(chatRef, { members, createdAt: serverTimestamp() });
+      }
+      const chatMessagesCol = collection(db, 'chats', chatId, 'messages');
+      await addDoc(chatMessagesCol, {
+        sender: senderId,
+        text,
+        timestamp: serverTimestamp()
+      });
+      await setDoc(chatRef, { lastMessage: text, lastMessageTimestamp: serverTimestamp() }, { merge: true });
+    } catch (err) {
+      console.error('Error saving private message:', err);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('user disconnected', socket.id);
     if (socket.username) {
