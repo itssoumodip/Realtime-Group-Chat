@@ -36,7 +36,7 @@ const UserList = ({ currentUser, onSelectUser, onLogout }) => {
         <div className="flex flex-col h-[100dvh] overflow-hidden">
             <div className="flex items-center gap-3 px-3 py-2 md:px-4 md:py-3 border-b border-gray-200 flex-shrink-0">
                 <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
-                    <img className='' src="/singlecat.jpg" alt="Logo" />
+                    <img className='rounded-full' src="/singlecat.jpg" alt="Logo" />
                 </div>
                 <div className="flex-1">
                     <div className="text-sm font-medium text-[#303030]">Single Chat</div>
